@@ -18,7 +18,6 @@ class NotionAdapter:
             'Content-Type': 'application/json'
         }
 
-    @st.cache_data
     def query(_self, database_id: str, filter=None):
         """
         The database id is the first number in the page link
