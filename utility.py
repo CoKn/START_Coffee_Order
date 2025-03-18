@@ -32,6 +32,9 @@ def parse_response(response):
         if "title" in name_prop and len(name_prop["title"]) > 0:
             station = name_prop["title"][0].get("plain_text", "")
 
+        station_relation_prop = props.get("Event Stations", {}).get("relation", [])
+        station_relation_id = station_relation_prop[0].get("id") if station_relation_prop else None
+
         # Extract current and max quantities
         current_quant = props.get("Current Quant", {}).get("number", None)
         max_quant = props.get("Max Quant", {}).get("number", None)
@@ -48,6 +51,7 @@ def parse_response(response):
 
         rows.append({
             "Station": station,
+            "Station_Relation_ID": station_relation_id,
             "Current Quant": current_quant,
             "Max Quant": max_quant,
             "Inventory": inventory_name,
@@ -86,7 +90,8 @@ def create_dynamic_form(df, station, notion_adapter, database_id):
 
             if submit_button:
                 for item, quantity in order_quantities.items():
-                    relation_id = df.loc[df['Inventory'] == item, 'Inventory_Relation_ID'].values[0]
+                    inventory_relation_id = df.loc[df['Inventory'] == item, 'Inventory_Relation_ID'].values[0]
+                    station_relation_id = df['Station_Relation_ID'].values[0]
                     properties = {
                         "Name": {
                             "title": [
@@ -100,12 +105,19 @@ def create_dynamic_form(df, station, notion_adapter, database_id):
                         "Inventory": {
                             "relation": [
                                 {
-                                    "id": relation_id
+                                    "id": inventory_relation_id
                                 }
                             ]
                         },
                         "Update Quantity": {
                             "number": quantity
+                        },
+                        "Event Stations": {
+                            "relation": [
+                                {
+                                    "id": station_relation_id
+                                }
+                            ]
                         }
                     }
                     response = notion_adapter.create_page(database_id=database_id, properties=properties)

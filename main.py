@@ -15,12 +15,14 @@ if __name__ == "__main__":
     query_params = st.query_params.to_dict()
 
     selected_station = query_params.get('station', None)
-    long = query_params.get('log', None)
-    lat = query_params.get('lat', None)
-    location = {"latitude": lat, "longitude": long}
+    location = {"latitude": query_params.get('lat', None), "longitude": query_params.get('log', None)}
+
+    if not location["latitude"] or not location["longitude"]:
+        st.warning("You are not authenticated to use this app.")
 
     if not is_within_radius(allowed_location=allowed_location, current_location=location, radius=2):
         st.warning("You are not authenticated to use this app.")
+
     else:
         if selected_station:
             filter_ = {
@@ -37,7 +39,10 @@ if __name__ == "__main__":
         adapter = NotionAdapter()
         res = adapter.query(database_id=os.getenv('Notion_DB_ID_STATIONS'), filter=filter_)
 
+        print(res)
+
         df = pd.DataFrame(parse_response(res))
+        print(df)
         if selected_station:
             create_dynamic_form(df, station=selected_station, notion_adapter=adapter, database_id=os.getenv('Notion_DB_ID_REQUESTS'))
         else:
