@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_current_location import current_position
 from geopy.distance import geodesic
 
 
@@ -37,11 +36,12 @@ def parse_response(response):
         current_quant = props.get("Current Quant", {}).get("number", None)
         max_quant = props.get("Max Quant", {}).get("number", None)
 
-        # Extract inventory from the "Inventory" property; join IDs if available
-        inventory_prop = find_value_with_key(data=props, key="array")
-        inventory_name = ""
-        if inventory_prop:
-            inventory_name = combine_inventory_names(inventory_prop)
+        # Extract inventory from the "Inventory Name" property; join IDs if available
+        inventory_prop = props.get("Inventory Name", {}).get("rollup", {}).get("array", [])
+        inventory_name = ", ".join(
+            item.get("title", [{}])[0].get("plain_text", "")
+            for item in inventory_prop
+        )
 
         inventory_relation_prop = props.get("Inventory", {}).get("relation", [])
         inventory_relation_id = inventory_relation_prop[0].get("id") if inventory_relation_prop else None
@@ -115,13 +115,8 @@ def create_dynamic_form(df, station, notion_adapter, database_id):
                         st.success(f"Order placed for {quantity} units of {item}")
 
 
-def is_within_radius(radius, allowed_location):
-    current_location = current_position()
-    print("Allowed location:", allowed_location)
-    print("Current location:", current_location)
+def is_within_radius(radius, allowed_location, current_location):
     distance = geodesic((current_location["latitude"], current_location["longitude"]),
-                        (allowed_location["latitude"],
-                         allowed_location["longitude"])
+                        (allowed_location["latitude"], allowed_location["longitude"])
                         ).kilometers
-    print("Distance:", distance)
     return distance <= radius
