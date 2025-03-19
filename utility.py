@@ -49,13 +49,16 @@ def parse_response(response):
         inventory_relation_prop = props.get("Inventory", {}).get("relation", [])
         inventory_relation_id = inventory_relation_prop[0].get("id") if inventory_relation_prop else None
 
+        bulk_order = props.get("Bulk Order", {}).get("rollup", {}).get("array", [])[0].get("number", 1)
+
         rows.append({
             "Station": station,
             "Station_Relation_ID": station_relation_id,
             "Current Quant": current_quant,
             "Max Quant": max_quant,
             "Inventory": inventory_name,
-            "Inventory_Relation_ID": inventory_relation_id
+            "Inventory_Relation_ID": inventory_relation_id,
+            "bulk_order": bulk_order
         })
 
     return rows
@@ -80,12 +83,19 @@ def create_dynamic_form(df, station, notion_adapter, database_id):
             # Dictionary to store order quantities for each selected item
             order_quantities = {}
             for item in selected_items:
-                order_quantities[item] = st.number_input(f"Order Quantity for {item}", min_value=0, step=1,
+                bulk_order = df.loc[df['Inventory'] == item, 'bulk_order'].values[0]
+                order_quantities[item] = st.number_input(f"Order Quantity for {item}", min_value=0, step=bulk_order,
                                                          key=f"order_quantity_{item}")
+
 
             # Submit button
             if len(order_quantities.keys()) == 0:
                 return
+
+            others = ""
+            if "Other" in selected_items:
+                others = st.text_input("others")
+
             submit_button = st.form_submit_button(label='Submit Order')
 
             if submit_button:
@@ -116,6 +126,15 @@ def create_dynamic_form(df, station, notion_adapter, database_id):
                             "relation": [
                                 {
                                     "id": station_relation_id
+                                }
+                            ]
+                        },
+                        "Others": {
+                        "rich_text": [
+                                {
+                                    "text": {
+                                        "content": others
+                                    }
                                 }
                             ]
                         }

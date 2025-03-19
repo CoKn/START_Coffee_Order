@@ -42,6 +42,7 @@ if __name__ == "__main__":
         print(res)
 
         df = pd.DataFrame(parse_response(res))
+
         print(df)
         if selected_station:
             create_dynamic_form(df, station=selected_station, notion_adapter=adapter, database_id=os.getenv('Notion_DB_ID_REQUESTS'))
